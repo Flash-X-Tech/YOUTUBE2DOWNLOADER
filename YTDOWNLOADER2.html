@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YouTube Music Downloader</title>
+  <style>
+    :root {
+      --bg-dark: linear-gradient(to right, #1e3c72, #2a5298);
+      --bg-light: #f2f2f2;
+      --container-dark: rgba(255, 255, 255, 0.1);
+      --container-light: rgba(0, 0, 0, 0.05);
+      --text-dark: white;
+      --text-light: #1a1a1a;
+      --button-dark: #00c6ff;
+      --button-light: #0072ff;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-dark);
+      color: var(--text-dark);
+      transition: all 0.3s;
+    }
+
+    body.light-mode {
+      background: var(--bg-light);
+      color: var(--text-light);
+    }
+
+    .container {
+      flex: 1;
+      padding: 30px 20px 80px; /* bottom padding prevents footer overlap */
+      max-width: 500px;
+      margin: 0 auto;
+      border-radius: 16px;
+      text-align: center;
+      width: 100%;
+      box-sizing: border-box;
+      transition: all 0.3s;
+    }
+
+    .dark-mode .container {
+      background: var(--container-dark);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    }
+
+    .light-mode .container {
+      background: var(--container-light);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      outline: none;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: var(--button-dark);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .light-mode button {
+      background-color: var(--button-light);
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    #title {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    .light-mode .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.2);
+      border-top: 4px solid #000;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .toggle-mode {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: 2px solid white;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .light-mode .toggle-mode {
+      border-color: #333;
+      color: #333;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.8;
+      padding: 16px 12px;
+      margin-top: auto;
+    }
+
+    .footer a {
+      color: inherit;
+      text-decoration: underline;
+    }
+
+    .dark-mode .footer a {
+      color: #a0dfff;
+    }
+
+    .light-mode .footer a {
+      color: #0066cc;
+    }
+
+    @media (max-width: 600px) {
+      .toggle-mode {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body class="dark-mode">
+  <button class="toggle-mode" onclick="toggleMode()">🌙 Dark Mode</button>
+  <div class="container">
+    <h1>🎵 YouTube Music Downloader</h1>
+    <input type="text" id="yt-url" placeholder="Paste YouTube video link..." />
+    <div style="margin-bottom: 15px;">
+      <label style="font-weight: bold;">Choose format:</label><br />
+      <select id="format" style="margin-top: 8px;">
+        <option value="mp3">MP3 (Audio)</option>
+        <option value="mp4">MP4 (Video)</option>
+      </select>
+    </div>
+    <button onclick="fetchMusic()">Get Download Link</button>
+
+    <div id="spinner" class="spinner hidden"></div>
+    <div id="title" class="hidden"></div>
+    <br />
+    <button id="downloadBtn" class="hidden">⬇️ Download Now</button>
+  </div>
+
+  <footer class="footer">
+    <p>📢 Join our <a href="https://t.me/flash_x_tech" target="_blank">Telegram Channel</a></p>
+    <p>💬 Chat in our <a href="https://t.me/flash_chatz" target="_blank">Telegram Group</a></p>
+    <p>👤 Made by <a href="https://t.me/ll_dhiraj_ll" target="_blank">Dhiraj</a></p>
+  </footer>
+
+<script>
+  function toggleMode() {
+    const body = document.body;
+    const toggleBtn = document.querySelector(".toggle-mode");
+
+    if (body.classList.contains("dark-mode")) {
+      body.classList.remove("dark-mode");
+      body.classList.add("light-mode");
+      toggleBtn.textContent = "☀️ Light Mode";
+    } else {
+      body.classList.remove("light-mode");
+      body.classList.add("dark-mode");
+      toggleBtn.textContent = "🌙 Dark Mode";
+    }
+  }
+
+  function cleanYouTubeURL(input) {
+    try {
+      const url = new URL(input);
+      if (url.hostname === "youtu.be") {
+        const videoId = url.pathname.slice(1);
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+      if (url.hostname.includes("youtube.com")) {
+        const videoId = url.searchParams.get("v");
+        return videoId ? `https://www.youtube.com/watch?v=${videoId}` : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function getYouTubeTitle(url) {
+    try {
+      const oembedURL = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+      const response = await fetch(oembedURL);
+      const data = await response.json();
+      return data.title || "Untitled Track";
+    } catch {
+      return "Untitled Track";
+    }
+  }
+
+  async function fetchMusic() {
+    const rawInput = document.getElementById('yt-url').value.trim();
+    const format = document.getElementById('format').value;
+    const urlInput = cleanYouTubeURL(rawInput);
+    const titleEl = document.getElementById('title');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const spinner = document.getElementById('spinner');
+
+    if (!urlInput) {
+      alert("Please enter a valid YouTube URL!");
+      return;
+    }
+
+    titleEl.classList.add('hidden');
+    downloadBtn.classList.add('hidden');
+    spinner.classList.remove('hidden');
+
+    try {
+      let apiURL = "";
+      if (format === "mp3") {
+        // MP3 API
+        apiURL = `https://ytdownloader.anshppt19.workers.dev/?url=${encodeURIComponent(urlInput)}`;
+      } else {
+        // MP4 API
+        apiURL = `https://then-jocelin-anshapiyt-459a1299.koyeb.app/?url=${encodeURIComponent(urlInput)}&type=mp4`;
+      }
+
+      const response = await fetch(apiURL);
+      if (!response.ok) throw new Error("Network error");
+
+      const data = await response.json();
+      spinner.classList.add('hidden');
+
+      if (data.status === "success" && data.download_url) {
+        let title = data.title;
+        if (!title || title === "Unknown") {
+          title = await getYouTubeTitle(urlInput);
+        }
+
+        titleEl.textContent = `🎶 Title: ${title} (${format.toUpperCase()})`;
+        titleEl.classList.remove('hidden');
+
+        downloadBtn.onclick = () => {
+          const downloadLink = data.download_url.startsWith("http")
+            ? data.download_url
+            : `https://${data.download_url}`;
+          window.location.href = downloadLink;
+        };
+        downloadBtn.classList.remove('hidden');
+      } else {
+        alert("No downloadable link found. Try another video.");
+      }
+    } catch (error) {
+      spinner.classList.add('hidden');
+      console.error(error);
+      alert("Something went wrong. Please check the URL and try again.");
+    }
+  }
+</script>
+
+</body>
+</html>
